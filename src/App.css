@@ -1,0 +1,36 @@
+.directory-tree {
+  height: 100%;
+  max-width: 400px;
+  overflow: auto;
+}
+
+.directory-row {
+  display: flex;
+  align-items: center;
+  height: 35px;
+  cursor: pointer;
+  padding: 4px;
+  border: 1px solid transparent;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  &.selected {
+    border: 1px solid blue;
+  }
+}
+
+
+.expander {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+  padding: 0;
+}
+
+.tree-padder {
+  display: inline-block;
+  width: 16px;
+}
