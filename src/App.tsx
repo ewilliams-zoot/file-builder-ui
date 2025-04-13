@@ -1,4 +1,4 @@
-import DirectoryTree from './components/DirectoryTree/DirectoryTree';
+import DirectoryTree from './components/directory_tree/DirectoryTree';
 import './App.css';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

@@ -1,19 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import React from 'react';
+import React, { useState } from 'react';
 import TreeNode, { TreeNodeData } from './TreeNode';
 import SelectedNodeProvider from './SelectedNodeProvider';
+import { useDirectoryTreeService } from './use_directory_tree_service';
 
 const DirectoryTree: React.FC = () => {
-  const { data } = useQuery({
-    queryKey: ['dir-tree'],
-    queryFn: async () => {
-      const { data } = await axios.get('http://localhost:3000/data/directory');
-      return data;
-    },
-  });
+  const { treeData, addNode } = useDirectoryTreeService();
 
-  if (!data) {
+  if (!treeData) {
     return <p>Loading...</p>;
   }
 
@@ -21,7 +14,7 @@ const DirectoryTree: React.FC = () => {
     <SelectedNodeProvider>
       <div className="directory-tree">
         <TreeNode key="root" data={{ nodeType: 'file', fileType: 'root', id: 'root', name: 'Project Root' }} />
-        {data?.data.map((treeData: TreeNodeData) => (
+        {treeData.map((treeData: TreeNodeData) => (
           <TreeNode key={treeData.id} data={treeData} level={1} />
         ))}
       </div>

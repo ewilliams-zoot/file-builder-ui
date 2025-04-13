@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { ContextMenuDispatcherContext, ContextMenuStateContext } from './context_menu_context';
 import { ContextMenuItem } from './types';
+import './ContextMenu.css';
 
 const ContextMenu = () => {
   const state = useContext(ContextMenuStateContext)!;
@@ -40,15 +41,10 @@ const ContextMenu = () => {
     isOpen && (
       <div
         ref={menuRef}
-        style={{
-          position: 'absolute',
-          top: `${y}px`,
-          left: `${x}px`,
-          padding: '12px',
-          background: 'rgba(0, 0, 0, 0.2)',
-        }}>
+        className="context-menu"
+        style={{ left: `${x}px`, top: `${y}px`}}>
         {items.map(({ label, action }, i) => (
-          <p key={`${label}-${i}`} onClick={() => runAction(action)} style={{ padding: 0, margin: 0 }}>
+          <p key={`${label}-${i}`} onClick={() => runAction(action)} className="menu-item">
             {label}
           </p>
         ))}
