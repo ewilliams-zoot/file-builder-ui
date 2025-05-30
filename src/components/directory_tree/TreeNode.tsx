@@ -2,6 +2,7 @@ import { memo, useCallback, useContext, useMemo, useState } from 'react';
 import Expander from './Expander';
 import { SelectedNodeContext } from './SelectedNodeContext';
 import { ContextMenuDispatcherContext } from '../context_menu/context_menu_context';
+import { DeleteFolderContext } from './DeleteFolderContext';
 
 export type TreeNodeData =
   | {
@@ -20,6 +21,7 @@ export type TreeNodeData =
 const TreeNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data, level = 0 }) => {
   const { nodeType, name } = data;
   const { selectedNode, setSelectedNode } = useContext(SelectedNodeContext)!;
+  const deleteFolder = useContext(DeleteFolderContext);
   const contextMenuDispatcher = useContext(ContextMenuDispatcherContext);
   const [isExpanded, setIsExpanded] = useState(false);
   const isSelected = useMemo(() => selectedNode === data.id, [selectedNode, data.id]);
@@ -44,15 +46,15 @@ const TreeNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data,
         items: [
           {
             label: 'hello',
-            action: () => console.log('hello'),
+            action: () => console.log('hello')
           },
           {
-            label: 'there',
-            action: () => console.log('there'),
-          },
+            label: 'delete',
+            action: () => deleteFolder('data/helpers')
+          }
         ],
         x: e.clientX + 30,
-        y: e.clientY,
+        y: e.clientY
       });
     },
     [contextMenuDispatcher]
@@ -94,7 +96,8 @@ const Folder = () => {
             stroke="#000000"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round"></path>
+            strokeLinejoin="round"
+          ></path>
         </g>
       </svg>
     </div>
@@ -113,7 +116,8 @@ const File = () => {
             stroke="#000000"
             strokeWidth="2"
             strokeLinecap="round"
-            strokeLinejoin="round"></path>
+            strokeLinejoin="round"
+          ></path>
         </g>
       </svg>
     </div>
