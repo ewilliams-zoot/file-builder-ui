@@ -2,7 +2,8 @@ import { memo, useCallback, useContext, useMemo, useState } from 'react';
 import Expander from './Expander';
 import { SelectedNodeContext } from './SelectedNodeContext';
 import { ContextMenuDispatcherContext } from '../context_menu/context_menu_context';
-import { DeleteFolderContext } from './DeleteFolderContext';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 
 export type TreeNodeData =
   | {
@@ -10,22 +11,58 @@ export type TreeNodeData =
       name: string;
       nodeType: 'file';
       fileType: string;
+      parentPath: string;
     }
   | {
       id: string;
       name: string;
       nodeType: 'folder';
       children: TreeNodeData[];
+      parentPath: string;
     };
 
 const TreeNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data, level = 0 }) => {
-  const { nodeType, name } = data;
+  const { nodeType, name, parentPath } = data;
   const { selectedNode, setSelectedNode } = useContext(SelectedNodeContext)!;
-  const deleteFolder = useContext(DeleteFolderContext);
   const contextMenuDispatcher = useContext(ContextMenuDispatcherContext);
   const [isExpanded, setIsExpanded] = useState(false);
   const isSelected = useMemo(() => selectedNode === data.id, [selectedNode, data.id]);
   const classStr = useMemo(() => `directory-row ${isSelected ? 'selected' : ''}`, [isSelected]);
+  const queryClient = useQueryClient();
+
+  const deleteFolderMutation = useMutation({
+    mutationFn: async (path: string) => {
+      await axios.delete(`http://localhost:3000/api/folder/${encodeURIComponent(path)}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dir-tree'] });
+    }
+  });
+
+  const addFolderMutation = useMutation({
+    mutationFn: async (parentPath: string) => {
+      await axios.put('http://localhost:3000/api/folder', {
+        folderName: 'default_name',
+        parentPath
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dir-tree'] });
+    }
+  });
+
+  const addFileMutation = useMutation({
+    mutationFn: async (parentPath: string) => {
+      await axios.put('http://localhost:3000/api/file', {
+        fileName: 'default_file.flow',
+        parentPath,
+        initialData: 'I am a default file'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dir-tree'] });
+    }
+  });
 
   const toggleExpand = useCallback(() => {
     setIsExpanded((ex) => !ex);
@@ -41,23 +78,33 @@ const TreeNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data,
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
+
+      const menuItems = [
+        {
+          label: 'Delete',
+          action: () => deleteFolderMutation.mutate('data/helpers')
+        }
+      ];
+
+      if (nodeType === 'folder') {
+        menuItems.push({
+          label: 'Add Folder',
+          action: () => addFolderMutation.mutate(`${parentPath}/${name}`)
+        });
+        menuItems.push({
+          label: 'Add File',
+          action: () => addFileMutation.mutate(`${parentPath}/${name}`)
+        });
+      }
+
       contextMenuDispatcher?.({
         type: 'open',
-        items: [
-          {
-            label: 'hello',
-            action: () => console.log('hello')
-          },
-          {
-            label: 'delete',
-            action: () => deleteFolder('data/helpers')
-          }
-        ],
+        items: menuItems,
         x: e.clientX + 30,
         y: e.clientY
       });
     },
-    [contextMenuDispatcher]
+    [contextMenuDispatcher, deleteFolderMutation, addFolderMutation, addFileMutation, nodeType, parentPath, name]
   );
 
   if (nodeType === 'folder') {

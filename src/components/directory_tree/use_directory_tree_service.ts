@@ -1,10 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { TreeNodeData } from './TreeNode';
 
 export const useDirectoryTreeService = () => {
-  const queryClient = useQueryClient();
-
   const { data: treeData } = useQuery({
     queryKey: ['dir-tree'],
     queryFn: async () => {
@@ -16,14 +14,5 @@ export const useDirectoryTreeService = () => {
     }
   });
 
-  const deleteFolderMutation = useMutation({
-    mutationFn: async (path: string) => {
-      await axios.delete(`http://localhost:3000/api/folder/${encodeURIComponent(path)}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dir-tree'] });
-    }
-  });
-
-  return { treeData, deleteFolderMutation };
+  return { treeData };
 };
