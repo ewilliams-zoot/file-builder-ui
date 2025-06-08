@@ -37,7 +37,7 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
       const menuItems = [
         {
           label: 'Delete',
-          action: () => deleteFolderMutation.mutate(`${parentPath}/${name}`)
+          action: () => deleteFolderMutation.mutate({ parentPath, name })
         }
       ];
 
@@ -91,11 +91,11 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
 const useTreeNodeMutations = () => {
   const queryClient = useQueryClient();
   const deleteFolderMutation = useMutation({
-    mutationFn: async (path: string) => {
-      await axiosClient.delete(`/folder/${encodeURIComponent(path)}`);
+    mutationFn: async ({ parentPath, name }: { parentPath: string; name: string }) => {
+      await axiosClient.delete(`/folder?path=${encodeURIComponent(`${parentPath}/${name}`)}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dir-tree'] });
+    onSuccess: (_, { parentPath }) => {
+      queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
     }
   });
 
@@ -106,8 +106,8 @@ const useTreeNodeMutations = () => {
         parentPath
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dir-tree'] });
+    onSuccess: (_, parentPath) => {
+      queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
     }
   });
 

@@ -3,10 +3,10 @@ import { TreeNodeData } from './types';
 import { SelectedNodeContext } from './SelectedNodeContext';
 import { ContextMenuDispatcherContext } from '../context_menu/context_menu_context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import FileIcon from './FileIcon';
+import { axiosClient } from '../../utils/axios_client';
 
-const FileNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data, level = 0 }) => {
+const FileNode: React.FC<{ data: TreeNodeData; level: number }> = memo(({ data, level }) => {
   const queryClient = useQueryClient();
   const { name, parentPath } = data;
   const { selectedNode, setSelectedNode } = useContext(SelectedNodeContext)!;
@@ -16,7 +16,7 @@ const FileNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data,
 
   const deleteFileMutation = useMutation({
     mutationFn: async () => {
-      await axios.delete(`/file?path=${encodeURIComponent(parentPath + name)}`);
+      await axiosClient.delete(`/file?path=${encodeURIComponent(`${parentPath}/${name}`)}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
