@@ -2,14 +2,18 @@ Just some hacking on ideas
 
 Just did
 
-- Wrote an ass way to handle default file name and duplicate file name entry trying to append numbers.
-  It stops after 2 though, so need to figure that out
+- Fixed default naming
+- Added file and folder renaming
 
 TODO
 
+- Need to apply duplicate names to new rename endpoints
+  - Should probably add validation client-side too
 - Harden implementation in the server
   - Validation like duplicate file names
 - Better UI experience
-  - tree doesn't collapse on every mutation call [check]
   - sub-menus for context menu perhaps
   - choosing which kind of file to create (like a wizard)
+    - this can include setting the name upon creation too
+- Better shared code between file and folder
+- New file and folder "services" for mutations to keep components clean

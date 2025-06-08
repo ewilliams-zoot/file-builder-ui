@@ -17,7 +17,8 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
   const [isExpanded, setIsExpanded] = useState(false);
   const isSelected = useMemo(() => selectedNode === `${parentPath}/${name}`, [selectedNode, parentPath, name]);
   const classStr = useMemo(() => `directory-row ${isSelected ? 'selected' : ''}`, [isSelected]);
-  const { addFileMutation, addFolderMutation, deleteFolderMutation } = useTreeNodeMutations();
+  const { addFileMutation, addFolderMutation, deleteFolderMutation, renameFolderMutation } = useTreeNodeMutations();
+  const [inEditMode, setInEditMode] = useState(false);
 
   const toggleExpand = useCallback(() => {
     setIsExpanded((ex) => !ex);
@@ -36,19 +37,22 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
 
       const menuItems = [
         {
+          label: 'Rename',
+          action: () => setInEditMode(true)
+        },
+        {
+          label: 'Add Folder',
+          action: () => addFolderMutation.mutate(`${parentPath}/${name}`)
+        },
+        {
+          label: 'Add File',
+          action: () => addFileMutation.mutate(`${parentPath}/${name}`)
+        },
+        {
           label: 'Delete',
           action: () => deleteFolderMutation.mutate({ parentPath, name })
         }
       ];
-
-      menuItems.push({
-        label: 'Add Folder',
-        action: () => addFolderMutation.mutate(`${parentPath}/${name}`)
-      });
-      menuItems.push({
-        label: 'Add File',
-        action: () => addFileMutation.mutate(`${parentPath}/${name}`)
-      });
 
       contextMenuDispatcher?.({
         type: 'open',
@@ -58,6 +62,16 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
       });
     },
     [contextMenuDispatcher, deleteFolderMutation, addFolderMutation, addFileMutation, parentPath, name]
+  );
+
+  const editName: React.FocusEventHandler<HTMLInputElement> = useCallback(
+    (e) => {
+      if (e.target.value !== name) {
+        renameFolderMutation.mutate({ parentPath, name, newName: e.target.value });
+      }
+      setInEditMode(false);
+    },
+    [name, parentPath, renameFolderMutation]
   );
 
   if (!treeData) {
@@ -74,7 +88,7 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
         ) : (
           <div className="w-7"></div> /* Spacing for expander */
         )}
-        {name}
+        {inEditMode ? <input type="text" defaultValue={name} onBlur={editName} /> : name}
       </div>
       {isExpanded &&
         treeData.map((childData) =>
@@ -124,7 +138,20 @@ const useTreeNodeMutations = () => {
     }
   });
 
-  return { deleteFolderMutation, addFolderMutation, addFileMutation };
+  const renameFolderMutation = useMutation({
+    mutationFn: async ({ parentPath, name, newName }: { parentPath: string; name: string; newName: string }) => {
+      await axiosClient.patch(
+        `/folder?path=${encodeURIComponent(`${parentPath}/${name}`)}&newPath=${encodeURIComponent(
+          `${parentPath}/${newName}`
+        )}`
+      );
+    },
+    onSuccess: (_, { parentPath }) => {
+      queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
+    }
+  });
+
+  return { deleteFolderMutation, addFolderMutation, addFileMutation, renameFolderMutation };
 };
 
 export default FolderNode;
