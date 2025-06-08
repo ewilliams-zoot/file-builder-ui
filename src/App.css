@@ -21,12 +21,11 @@
   }
 }
 
-
 .expander {
   display: inline-block;
   width: 24px;
   height: 24px;
-  margin-right: 12px;
+  margin-right: 4px;
   padding: 0;
 }
 

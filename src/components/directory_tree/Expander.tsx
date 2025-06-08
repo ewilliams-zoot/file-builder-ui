@@ -10,7 +10,7 @@ const Expander: React.FC<{ isExpanded: boolean; onToggled: () => void }> = memo(
   );
 
   return (
-    <button onClick={clickHandler} className="expander">
+    <button onClick={clickHandler} className="w-6 h-6 mr-1">
       {isExpanded ? '-' : '+'}
     </button>
   );

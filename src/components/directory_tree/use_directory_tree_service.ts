@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import { TreeNodeData } from './TreeNode';
+import { TreeNodeData } from './types';
+import { axiosClient } from '../../utils/axios_client';
 
-export const useDirectoryTreeService = () => {
+export const useDirectoryTreeService = (dirEntryPath: string) => {
   const { data: treeData } = useQuery({
-    queryKey: ['dir-tree'],
+    queryKey: ['dir-tree', dirEntryPath],
     queryFn: async () => {
-      const { data } = await axios.get('http://localhost:3000/api/directory');
+      const { data } = await axiosClient.get(`/directory?path=${encodeURIComponent(dirEntryPath)}`);
       return data;
     },
     select: (resp?: { data: TreeNodeData[] }) => {
