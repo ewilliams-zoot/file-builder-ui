@@ -8,12 +8,16 @@ import { useDirectoryTreeService } from './use_directory_tree_service';
 import { TreeNodeData } from './types';
 import { axiosClient } from '../../utils/axios_client';
 import FileNode from './FileNode';
+import { useRequiredContext } from '../../utils/use_required_context';
+import { ModalStateDispatchContext } from '../modal/contexts';
+import NewFileModal from '../modal/views/NewFileModal';
 
 const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data, level = 0 }) => {
   const { name, parentPath } = data;
   const { treeData } = useDirectoryTreeService(`${parentPath}/${name}`);
   const { selectedNode, setSelectedNode } = useContext(SelectedNodeContext)!;
   const contextMenuDispatcher = useContext(ContextMenuDispatcherContext);
+  const modalDispatch = useRequiredContext(ModalStateDispatchContext);
   const [isExpanded, setIsExpanded] = useState(false);
   const isSelected = useMemo(() => selectedNode === `${parentPath}/${name}`, [selectedNode, parentPath, name]);
   const classStr = useMemo(() => `directory-row ${isSelected ? 'selected' : ''}`, [isSelected]);
@@ -46,7 +50,20 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
         },
         {
           label: 'Add File',
-          action: () => addFileMutation.mutate(`${parentPath}/${name}`)
+          action: () => {
+            modalDispatch({
+              type: 'open',
+              render: () => (
+                <NewFileModal
+                  onDone={(fileType, fileName) => {
+                    addFileMutation.mutate({ parentPath: `${parentPath}/${name}`, fileType, fileName });
+                    modalDispatch({ type: 'close' });
+                  }}
+                  onCancel={() => modalDispatch({ type: 'close' })}
+                />
+              )
+            });
+          }
         },
         {
           label: 'Delete',
@@ -61,7 +78,7 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
         y: e.clientY
       });
     },
-    [contextMenuDispatcher, deleteFolderMutation, addFolderMutation, addFileMutation, parentPath, name]
+    [contextMenuDispatcher, deleteFolderMutation, addFolderMutation, addFileMutation, parentPath, name, modalDispatch]
   );
 
   const editName: React.FocusEventHandler<HTMLInputElement> = useCallback(
@@ -104,6 +121,7 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
 
 const useTreeNodeMutations = () => {
   const queryClient = useQueryClient();
+
   const deleteFolderMutation = useMutation({
     mutationFn: async ({ parentPath, name }: { parentPath: string; name: string }) => {
       await axiosClient.delete(`/folder?path=${encodeURIComponent(`${parentPath}/${name}`)}`);
@@ -126,14 +144,24 @@ const useTreeNodeMutations = () => {
   });
 
   const addFileMutation = useMutation({
-    mutationFn: async (parentPath: string) => {
+    mutationFn: async ({
+      parentPath,
+      fileType,
+      fileName = 'default_file'
+    }: {
+      parentPath: string;
+      fileType: 'flow' | 'js';
+      fileName?: string;
+    }) => {
+      if (fileName === '') fileName = 'default_file';
+
       await axiosClient.put('/file', {
-        fileName: 'default_file.flow',
+        fileName: `${fileName}.${fileType}`,
         parentPath,
         initialData: 'I am a default file'
       });
     },
-    onSuccess: (_, parentPath) => {
+    onSuccess: (_, { parentPath }) => {
       queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
     }
   });

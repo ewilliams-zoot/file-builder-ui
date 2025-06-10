@@ -2,8 +2,8 @@ Just some hacking on ideas
 
 Just did
 
-- Fixed default naming
-- Added file and folder renaming
+- Made modal content for new file its own component now
+- Added enter key submit for folder rename (need to do for file too)
 
 TODO
 
@@ -13,7 +13,5 @@ TODO
   - Validation like duplicate file names
 - Better UI experience
   - sub-menus for context menu perhaps
-  - choosing which kind of file to create (like a wizard)
-    - this can include setting the name upon creation too
 - Better shared code between file and folder
 - New file and folder "services" for mutations to keep components clean

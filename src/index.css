@@ -17,3 +17,15 @@ body {
   height: 100%;
   position: relative;
 }
+
+@theme {
+  --color-primary: #ff6200;
+}
+
+@layer base {
+  input[type="text"] {
+    border: 1px solid var(--color-primary);
+    border-radius: 4px;
+    padding: 4px;
+  }
+}

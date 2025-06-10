@@ -79,11 +79,24 @@ const FileNode: React.FC<{ data: TreeNodeData; level: number }> = memo(({ data, 
     [renameFileMutation, name]
   );
 
+  const enterSubmitName: React.KeyboardEventHandler<HTMLInputElement> = useCallback(
+    (e) => {
+      if (e.key === 'Enter') {
+        const input = e.target as HTMLInputElement;
+        if (input.value !== name) {
+          renameFileMutation.mutate(input.value);
+        }
+        setInEditMode(false);
+      }
+    },
+    [name, renameFileMutation]
+  );
+
   return (
     <div onClick={selectNode} onContextMenu={openContextMenu} className={classStr}>
       <span style={{ display: 'inline-block', width: `${level * 16}px` }}></span>
       <FileIcon />
-      {inEditMode ? <input type="text" defaultValue={name} onBlur={editName} /> : name}
+      {inEditMode ? <input type="text" defaultValue={name} onBlur={editName} onKeyDown={enterSubmitName} /> : name}
     </div>
   );
 });
