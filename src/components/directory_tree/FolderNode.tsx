@@ -3,15 +3,15 @@ import Expander from './Expander';
 import { ContextMenuDispatcherContext } from '../context_menu/context_menu_context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import FolderIcon from './FolderIcon';
-import { useDirectoryTreeService } from './use_directory_tree_service';
+import { useDirectoryTreeService } from './hooks/use_directory_tree_service';
 import { TreeNodeData } from './types';
 import { axiosClient } from '../../utils/axios_client';
 import FileNode from './FileNode';
 import { useRequiredContext } from '../../utils/use_required_context';
 import { ModalStateDispatchContext } from '../modal/contexts';
 import NewFileModal from '../modal/views/NewFileModal';
-import { useIsSelectedNode } from './use_is_selected_node';
-import { useEditNode } from './use_edit_node';
+import { useIsSelectedNode } from './hooks/use_is_selected_node';
+import { useEditNode } from './hooks/use_edit_node';
 
 const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data, level = 0 }) => {
   const { name, parentPath } = data;

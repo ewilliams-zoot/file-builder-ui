@@ -4,8 +4,8 @@ import { ContextMenuDispatcherContext } from '../context_menu/context_menu_conte
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import FileIcon from './FileIcon';
 import { axiosClient } from '../../utils/axios_client';
-import { useIsSelectedNode } from './use_is_selected_node';
-import { useEditNode } from './use_edit_node';
+import { useIsSelectedNode } from './hooks/use_is_selected_node';
+import { useEditNode } from './hooks/use_edit_node';
 
 const FileNode: React.FC<{ data: TreeNodeData; level: number }> = memo(({ data, level }) => {
   const queryClient = useQueryClient();

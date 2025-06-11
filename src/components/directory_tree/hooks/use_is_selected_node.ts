@@ -1,5 +1,5 @@
 import { useCallback, useContext, useMemo } from 'react';
-import { SelectedNodeContext } from './SelectedNodeContext';
+import { SelectedNodeContext } from '../SelectedNodeContext';
 
 export const useIsSelectedNode = (path: string) => {
   const { selectedNode, setSelectedNode } = useContext(SelectedNodeContext)!;

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import { axiosClient } from '../../utils/axios_client';
+import { axiosClient } from '../../../utils/axios_client';
 
 export const useEditNode = (name: string, parentPath: string) => {
   const [inEditMode, setInEditMode] = useState(false);
