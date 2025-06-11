@@ -4,6 +4,7 @@ Just did
 
 - Made modal content for new file its own component now
 - Added enter key submit for folder rename (need to do for file too)
+- Refactored tree nodes a bit to share hook code
 
 TODO
 
