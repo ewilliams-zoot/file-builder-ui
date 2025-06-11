@@ -1,6 +1,5 @@
 import { memo, useCallback, useContext, useMemo, useState } from 'react';
 import Expander from './Expander';
-import { SelectedNodeContext } from './SelectedNodeContext';
 import { ContextMenuDispatcherContext } from '../context_menu/context_menu_context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import FolderIcon from './FolderIcon';
@@ -11,28 +10,23 @@ import FileNode from './FileNode';
 import { useRequiredContext } from '../../utils/use_required_context';
 import { ModalStateDispatchContext } from '../modal/contexts';
 import NewFileModal from '../modal/views/NewFileModal';
+import { useIsSelectedNode } from './use_is_selected_node';
+import { useEditNode } from './use_edit_node';
 
 const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ data, level = 0 }) => {
   const { name, parentPath } = data;
   const { treeData } = useDirectoryTreeService(`${parentPath}/${name}`);
-  const { selectedNode, setSelectedNode } = useContext(SelectedNodeContext)!;
+  const { isSelected, selectNode } = useIsSelectedNode(`${parentPath}/${name}`);
   const contextMenuDispatcher = useContext(ContextMenuDispatcherContext);
   const modalDispatch = useRequiredContext(ModalStateDispatchContext);
   const [isExpanded, setIsExpanded] = useState(false);
-  const isSelected = useMemo(() => selectedNode === `${parentPath}/${name}`, [selectedNode, parentPath, name]);
   const classStr = useMemo(() => `directory-row ${isSelected ? 'selected' : ''}`, [isSelected]);
-  const { addFileMutation, addFolderMutation, deleteFolderMutation, renameFolderMutation } = useTreeNodeMutations();
-  const [inEditMode, setInEditMode] = useState(false);
+  const { addFileMutation, addFolderMutation, deleteFolderMutation } = useTreeNodeMutations(parentPath, name);
+  const { inEditMode, setInEditMode, blurSubmitEdit, enterKeySubmitEdit } = useEditNode(name, parentPath);
 
   const toggleExpand = useCallback(() => {
     setIsExpanded((ex) => !ex);
   }, []);
-
-  const selectNode = useCallback(() => {
-    if (!isSelected) {
-      setSelectedNode(`${parentPath}/${name}`);
-    }
-  }, [isSelected, setSelectedNode, parentPath, name]);
 
   const openContextMenu = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -46,7 +40,7 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
         },
         {
           label: 'Add Folder',
-          action: () => addFolderMutation.mutate(`${parentPath}/${name}`)
+          action: () => addFolderMutation.mutate()
         },
         {
           label: 'Add File',
@@ -56,7 +50,7 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
               render: () => (
                 <NewFileModal
                   onDone={(fileType, fileName) => {
-                    addFileMutation.mutate({ parentPath: `${parentPath}/${name}`, fileType, fileName });
+                    addFileMutation.mutate({ fileType, fileName });
                     modalDispatch({ type: 'close' });
                   }}
                   onCancel={() => modalDispatch({ type: 'close' })}
@@ -67,7 +61,7 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
         },
         {
           label: 'Delete',
-          action: () => deleteFolderMutation.mutate({ parentPath, name })
+          action: () => deleteFolderMutation.mutate()
         }
       ];
 
@@ -78,17 +72,7 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
         y: e.clientY
       });
     },
-    [contextMenuDispatcher, deleteFolderMutation, addFolderMutation, addFileMutation, parentPath, name, modalDispatch]
-  );
-
-  const editName: React.FocusEventHandler<HTMLInputElement> = useCallback(
-    (e) => {
-      if (e.target.value !== name) {
-        renameFolderMutation.mutate({ parentPath, name, newName: e.target.value });
-      }
-      setInEditMode(false);
-    },
-    [name, parentPath, renameFolderMutation]
+    [contextMenuDispatcher, deleteFolderMutation, addFolderMutation, addFileMutation, modalDispatch, setInEditMode]
   );
 
   if (!treeData) {
@@ -105,81 +89,64 @@ const FolderNode: React.FC<{ data: TreeNodeData; level?: number }> = memo(({ dat
         ) : (
           <div className="w-7"></div> /* Spacing for expander */
         )}
-        {inEditMode ? <input type="text" defaultValue={name} onBlur={editName} /> : name}
+        {inEditMode ? (
+          <input type="text" defaultValue={name} onBlur={blurSubmitEdit} onKeyDown={enterKeySubmitEdit} />
+        ) : (
+          name
+        )}
       </div>
       {isExpanded &&
-        treeData.map((childData) =>
-          childData.nodeType === 'folder' ? (
-            <FolderNode key={childData.name} data={childData} level={level + 1} />
-          ) : (
-            <FileNode key={childData.name} data={childData} level={level + 1} />
-          )
-        )}
+        treeData
+          .filter(({ nodeType }) => nodeType === 'folder')
+          .map((childData) => <FolderNode key={childData.name} data={childData} level={level + 1} />)}
+      {isExpanded &&
+        treeData
+          .filter(({ nodeType }) => nodeType === 'file')
+          .map((childData) => <FileNode key={childData.name} data={childData} level={level + 1} />)}
     </>
   );
 });
 
-const useTreeNodeMutations = () => {
+const useTreeNodeMutations = (parentPath: string, name: string) => {
   const queryClient = useQueryClient();
 
   const deleteFolderMutation = useMutation({
-    mutationFn: async ({ parentPath, name }: { parentPath: string; name: string }) => {
+    mutationFn: async () => {
       await axiosClient.delete(`/folder?path=${encodeURIComponent(`${parentPath}/${name}`)}`);
     },
-    onSuccess: (_, { parentPath }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
     }
   });
 
   const addFolderMutation = useMutation({
-    mutationFn: async (parentPath: string) => {
+    mutationFn: async () => {
       await axiosClient.put('/folder', {
         folderName: 'default_name',
-        parentPath
+        parentPath: `${parentPath}/${name}`
       });
     },
-    onSuccess: (_, parentPath) => {
-      queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dir-tree', `${parentPath}/${name}`] });
     }
   });
 
   const addFileMutation = useMutation({
-    mutationFn: async ({
-      parentPath,
-      fileType,
-      fileName = 'default_file'
-    }: {
-      parentPath: string;
-      fileType: 'flow' | 'js';
-      fileName?: string;
-    }) => {
+    mutationFn: async ({ fileType, fileName = 'default_file' }: { fileType: 'flow' | 'js'; fileName?: string }) => {
       if (fileName === '') fileName = 'default_file';
 
       await axiosClient.put('/file', {
         fileName: `${fileName}.${fileType}`,
-        parentPath,
+        parentPath: `${parentPath}/${name}`,
         initialData: 'I am a default file'
       });
     },
-    onSuccess: (_, { parentPath }) => {
-      queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dir-tree', `${parentPath}/${name}`] });
     }
   });
 
-  const renameFolderMutation = useMutation({
-    mutationFn: async ({ parentPath, name, newName }: { parentPath: string; name: string; newName: string }) => {
-      await axiosClient.patch(
-        `/folder?path=${encodeURIComponent(`${parentPath}/${name}`)}&newPath=${encodeURIComponent(
-          `${parentPath}/${newName}`
-        )}`
-      );
-    },
-    onSuccess: (_, { parentPath }) => {
-      queryClient.invalidateQueries({ queryKey: ['dir-tree', parentPath] });
-    }
-  });
-
-  return { deleteFolderMutation, addFolderMutation, addFileMutation, renameFolderMutation };
+  return { deleteFolderMutation, addFolderMutation, addFileMutation };
 };
 
 export default FolderNode;
